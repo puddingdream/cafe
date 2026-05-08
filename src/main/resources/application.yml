@@ -1,3 +1,10 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
-   name: cafe
+    name: cafe
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  access-token-validity-time: ${JWT_ACCESS_TOKEN_VALIDITY_TIME}
+  refresh-token-validity-time: ${JWT_REFRESH_TOKEN_VALIDITY_TIME}

@@ -1,5 +1,6 @@
 HELP.md
 coffee_order_codex_handover.md
+.env
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
