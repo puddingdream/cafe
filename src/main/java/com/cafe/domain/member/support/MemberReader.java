@@ -23,4 +23,9 @@ public class MemberReader {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
+
+    public Member findByIdForUpdate(Long memberId) {
+        return memberRepository.findWithLockById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
 }

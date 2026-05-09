@@ -5,6 +5,8 @@ import com.cafe.common.error.MemberException;
 import com.cafe.domain.auth.dto.SignUpRequest;
 import com.cafe.domain.member.entity.Member;
 import com.cafe.domain.member.repository.MemberRepository;
+import com.cafe.domain.point.entity.PointWallet;
+import com.cafe.domain.point.repository.PointWalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class MemberService {
     private final MemberRepository memberRepository;
+    private final PointWalletRepository pointWalletRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -33,6 +36,12 @@ public class MemberService {
                 .phoneNumber(request.phoneNumber())
                 .build();
 
-        return memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
+        PointWallet pointWallet = pointWalletRepository.save(PointWallet.builder()
+                .memberId(savedMember.getId())
+                .build());
+        savedMember.linkPointWallet(pointWallet.getId());
+
+        return savedMember;
     }
 }
