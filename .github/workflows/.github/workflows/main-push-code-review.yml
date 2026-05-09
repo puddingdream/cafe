@@ -1,0 +1,199 @@
+name: Main Push Code Review
+
+"on":
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: main-push-code-review-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
+
+jobs:
+  review:
+    name: Review pushed code after merge to main
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Build review context from diff and whole project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.sha }}"
+
+          if [ -z "${BEFORE_SHA}" ] || [ "${BEFORE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE_SHA="${AFTER_SHA}^"
+          fi
+
+          export BEFORE_SHA AFTER_SHA
+
+          python3 <<'PY'
+          from pathlib import Path
+          import os
+          import subprocess
+
+          before = os.environ.get("BEFORE_SHA", "")
+          after = os.environ.get("AFTER_SHA", "HEAD")
+          root = Path.cwd()
+          max_file_bytes = 20_000
+          max_total_bytes = 180_000
+          excluded_dirs = {".git", ".gradle", "build", "out", ".idea", ".vscode", "node_modules"}
+          excluded_suffixes = {".jar", ".class", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico", ".zip", ".gz"}
+
+          def run_git(*args: str) -> str:
+              return subprocess.run(["git", *args], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False).stdout
+
+          def allowed(path: Path) -> bool:
+              if any(part in excluded_dirs for part in path.parts):
+                  return False
+              if path.suffix.lower() in excluded_suffixes:
+                  return False
+              return path.is_file()
+
+          def read_text(path: Path) -> str:
+              raw = path.read_bytes()[:max_file_bytes]
+              return raw.decode("utf-8", errors="replace")
+
+          sections = []
+          sections.append("# 사후 코드리뷰 컨텍스트")
+          sections.append(f"- 기준 커밋: `{before}`")
+          sections.append(f"- 대상 커밋: `{after}`")
+          sections.append("\n## 변경 요약")
+          sections.append("```text\n" + run_git("diff", "--stat", before, after) + "\n```")
+          sections.append("\n## 변경 diff")
+          sections.append("```diff\n" + run_git("diff", "--find-renames", "--find-copies", before, after)[:60_000] + "\n```")
+          sections.append("\n## 프로젝트 파일 트리")
+          files = [p for p in sorted(root.rglob("*")) if allowed(p)]
+          sections.append("```text\n" + "\n".join(str(p.relative_to(root)) for p in files)[:20_000] + "\n```")
+          sections.append("\n## 프로젝트 전체 코드 스냅샷")
+
+          total = sum(len(s.encode("utf-8")) for s in sections)
+          for path in files:
+              rel = path.relative_to(root)
+              block = f"\n### {rel}\n```\n{read_text(path)}\n```\n"
+              size = len(block.encode("utf-8"))
+              if total + size > max_total_bytes:
+                  sections.append("\n> 컨텍스트 크기 제한으로 이후 파일은 생략했습니다. 필요한 경우 `max_total_bytes` 값을 조정하세요.\n")
+                  break
+              sections.append(block)
+              total += size
+
+          Path("review-context.md").write_text("\n".join(sections), encoding="utf-8")
+          PY
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+
+      - name: Request Korean code review
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            cat > review.md <<'EOF_REVIEW'
+          # 코드리뷰 실행 실패
+
+          `OPENAI_API_KEY` repository secret이 설정되어 있지 않아 AI 코드리뷰를 실행하지 못했습니다.
+
+          GitHub 저장소의 Settings → Secrets and variables → Actions에서 `OPENAI_API_KEY`를 추가한 뒤 다시 실행하세요.
+          EOF_REVIEW
+            exit 1
+          fi
+
+          python3 <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          context = Path("review-context.md").read_text(encoding="utf-8")
+          prompt = f"""
+          너는 Spring Boot 백엔드 프로젝트를 검토하는 시니어 코드리뷰어다.
+          리뷰는 반드시 한국어로 작성한다.
+          변경 diff만 보지 말고, 아래에 포함된 프로젝트 파일 트리와 전체 코드 스냅샷을 함께 보고 판단한다.
+          main 브랜치에 이미 푸시된 뒤 수행되는 사후검토이므로, 위험도가 높은 문제와 바로 수정할 액션을 우선한다.
+
+          출력 형식:
+          # 사후 코드리뷰 결과
+          ## 총평
+          ## 반드시 확인할 문제
+          - [심각도: 높음/중간/낮음] 파일 경로: 문제와 근거, 수정 제안
+          ## 보안/인증/권한 검토
+          ## 테스트/운영 리스크
+          ## 좋았던 점
+
+          코드리뷰 컨텍스트:
+          {context}
+          """
+
+          payload = {
+              "model": os.environ["OPENAI_MODEL"],
+              "input": prompt,
+          }
+          request = urllib.request.Request(
+              "https://api.openai.com/v1/responses",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(request, timeout=120) as response:
+              data = json.loads(response.read().decode("utf-8"))
+
+          text = data.get("output_text")
+          if not text:
+              chunks = []
+              for item in data.get("output", []):
+                  for content in item.get("content", []):
+                      if content.get("type") in {"output_text", "text"}:
+                          chunks.append(content.get("text", ""))
+              text = "\n".join(chunks).strip()
+
+          Path("review.md").write_text(text or "AI 코드리뷰 응답이 비어 있습니다.", encoding="utf-8")
+          PY
+
+      - name: Publish review to workflow summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f review.md ]; then
+            cat review.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Leave review as commit comment
+        if: always() && hashFiles('review.md') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('review.md', 'utf8');
+            const maxLength = 60000;
+            const trimmed = body.length > maxLength
+              ? `${body.slice(0, maxLength)}\n\n> 리뷰 내용이 길어 일부가 잘렸습니다. 전체 내용은 Actions summary를 확인하세요.`
+              : body;
+
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: trimmed,
+            });
