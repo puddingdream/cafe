@@ -1,0 +1,70 @@
+package com.cafe.infrastructure.storage;
+
+import com.cafe.common.error.MenuErrorCode;
+import com.cafe.common.error.MenuException;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class S3ObjectStorageClient implements ObjectStorageClient {
+    private final S3Client s3Client;
+    private final MediaStorageProperties properties;
+
+    public S3ObjectStorageClient(S3Client s3Client, MediaStorageProperties properties) {
+        this.s3Client = s3Client;
+        this.properties = properties;
+    }
+
+    @Override
+    public UploadedObject upload(MultipartFile file, String key) {
+        if (!StringUtils.hasText(properties.getBucket())) {
+            throw new MenuException(MenuErrorCode.MENU_IMAGE_STORAGE_DISABLED);
+        }
+
+        try (InputStream inputStream = file.getInputStream()) {
+            PutObjectRequest.Builder request = PutObjectRequest.builder()
+                    .bucket(properties.getBucket())
+                    .key(key)
+                    .contentLength(file.getSize());
+
+            if (StringUtils.hasText(file.getContentType())) {
+                request.contentType(file.getContentType());
+            }
+
+            s3Client.putObject(request.build(), RequestBody.fromInputStream(inputStream, file.getSize()));
+            return new UploadedObject(key, buildPublicUrl(key), file.getContentType(), file.getSize());
+        } catch (IOException | SdkException exception) {
+            throw new MenuException(MenuErrorCode.MENU_IMAGE_UPLOAD_FAILED, exception);
+        }
+    }
+
+    @Override
+    public void delete(String key) {
+        if (!StringUtils.hasText(key) || !StringUtils.hasText(properties.getBucket())) {
+            return;
+        }
+
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(properties.getBucket())
+                    .key(key)
+                    .build());
+        } catch (SdkException exception) {
+            throw new MenuException(MenuErrorCode.MENU_IMAGE_DELETE_FAILED, exception);
+        }
+    }
+
+    private String buildPublicUrl(String key) {
+        if (StringUtils.hasText(properties.getPublicBaseUrl())) {
+            return properties.getPublicBaseUrl().replaceAll("/+$", "") + "/" + key;
+        }
+        return "https://" + properties.getBucket() + ".s3." + properties.getRegion() + ".amazonaws.com/" + key;
+    }
+}

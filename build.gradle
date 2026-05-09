@@ -36,6 +36,10 @@ dependencies {
     // Kafka
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
 
+    // Object storage
+    implementation platform('software.amazon.awssdk:bom:2.25.70')
+    implementation 'software.amazon.awssdk:s3'
+
     // Security / JWT
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
