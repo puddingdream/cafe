@@ -66,4 +66,24 @@ public class PointHistory extends BaseEntity {
                 .afterPoint(afterPoint)
                 .build();
     }
+
+    public static PointHistory use(Long memberId, Long pointWalletId, long usedPoint, long afterPoint) {
+        return PointHistory.builder()
+                .memberId(memberId)
+                .pointWalletId(pointWalletId)
+                .type(PointHistoryType.USE)
+                .point(usedPoint)
+                .afterPoint(afterPoint)
+                .build();
+    }
+
+    public static PointHistory refund(Long memberId, Long pointWalletId, long refundPoint, long afterPoint) {
+        return PointHistory.builder()
+                .memberId(memberId)
+                .pointWalletId(pointWalletId)
+                .type(PointHistoryType.REFUND)
+                .point(refundPoint)
+                .afterPoint(afterPoint)
+                .build();
+    }
 }

@@ -50,6 +50,12 @@ public class PointWallet extends BaseEntity {
         return this.point;
     }
 
+    public long refund(long refundPoint) {
+        validatePositivePoint(refundPoint);
+        this.point += refundPoint;
+        return this.point;
+    }
+
     public long use(long usedPoint) {
         validatePositivePoint(usedPoint);
         if (this.point < usedPoint) {

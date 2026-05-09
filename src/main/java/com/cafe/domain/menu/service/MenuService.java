@@ -18,20 +18,19 @@ import com.cafe.infrastructure.storage.UploadedObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MenuService {
 
     private final MenuRepository menuRepository;
     private final MemberReader memberReader;
     private final MenuImageService menuImageService;
+    private final MenuTransactionService menuTransactionService;
 
+    @Transactional(readOnly = true)
     public List<MenuGetResponse> getMenus(String category) {
         List<Menu> menus = category == null || category.isBlank()
                 ? menuRepository.findAllByOrderByCreatedAtDesc()
@@ -42,66 +41,58 @@ public class MenuService {
                 .toList();
     }
 
-    @Transactional
     public MenuCreateResponse createMenu(MenuCreateRequest request, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
         validatePrice(request.price());
 
         MenuCategory category = MenuCategory.from(request.category());
         UploadedObject uploadedImage = menuImageService.uploadRequired(request.imageFile());
-        registerRollbackImageCleanup(uploadedImage);
 
-        Menu menu = Menu.builder()
-                .name(request.name())
-                .price(request.price())
-                .description(request.description())
-                .imageUrl(uploadedImage.url())
-                .imageKey(uploadedImage.key())
-                .category(category)
-                .build();
-
-        Menu savedMenu = menuRepository.save(menu);
-
-        return MenuCreateResponse.from(savedMenu);
+        try {
+            return menuTransactionService.createMenu(request, category, uploadedImage);
+        } catch (RuntimeException exception) {
+            menuImageService.deleteQuietly(uploadedImage.key());
+            throw exception;
+        }
     }
 
-    @Transactional
     public MenuGetResponse updateMenu(Long menuId, MenuUpdateRequest request, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
         validatePrice(request.price());
 
-        Menu menu = findMenu(menuId);
         MenuCategory category = MenuCategory.from(request.category());
         UploadedObject uploadedImage = menuImageService.uploadOptional(request.imageFile());
 
-        if (uploadedImage != null) {
-            registerRollbackImageCleanup(uploadedImage);
-            String previousImageKey = menu.getImageKey();
-            menu.updateImage(uploadedImage.url(), uploadedImage.key());
-            registerAfterCommitImageDelete(previousImageKey);
-        }
+        try {
+            MenuTransactionService.UpdateMenuResult result = menuTransactionService.updateMenu(
+                    menuId,
+                    request,
+                    category,
+                    uploadedImage
+            );
+            if (uploadedImage != null) {
+                menuImageService.deleteQuietly(result.previousImageKey());
+            }
 
-        menu.updateInfo(request.name(), request.description(), request.price(), category);
-        return MenuGetResponse.from(menu);
+            return result.response();
+        } catch (RuntimeException exception) {
+            if (uploadedImage != null) {
+                menuImageService.deleteQuietly(uploadedImage.key());
+            }
+            throw exception;
+        }
     }
 
-    @Transactional
     public MenuGetResponse toggleMenuStatus(Long menuId, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
-
-        Menu menu = findMenu(menuId);
-        menu.toggleStatus();
-        return MenuGetResponse.from(menu);
+        return menuTransactionService.toggleMenuStatus(menuId);
     }
 
-    @Transactional
     public void deleteMenu(Long menuId, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
 
-        Menu menu = findMenu(menuId);
-        String imageKey = menu.getImageKey();
-        menuRepository.delete(menu);
-        registerAfterCommitImageDelete(imageKey);
+        MenuTransactionService.DeleteMenuResult result = menuTransactionService.deleteMenu(menuId);
+        menuImageService.deleteQuietly(result.imageKey());
     }
 
     private void validateAdmin(Long memberId) {
@@ -115,43 +106,5 @@ public class MenuService {
         if (price <= 0) {
             throw new MenuException(MenuErrorCode.INVALID_MENU_PRICE);
         }
-    }
-
-    private Menu findMenu(Long menuId) {
-        return menuRepository.findById(menuId)
-                .orElseThrow(() -> new MenuException(MenuErrorCode.MENU_NOT_FOUND));
-    }
-
-    private void registerRollbackImageCleanup(UploadedObject uploadedImage) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                if (status != TransactionSynchronization.STATUS_COMMITTED) {
-                    menuImageService.deleteQuietly(uploadedImage.key());
-                }
-            }
-        });
-    }
-
-    private void registerAfterCommitImageDelete(String imageKey) {
-        if (imageKey == null || imageKey.isBlank()) {
-            return;
-        }
-
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            menuImageService.deleteQuietly(imageKey);
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                menuImageService.deleteQuietly(imageKey);
-            }
-        });
     }
 }

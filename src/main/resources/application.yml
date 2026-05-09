@@ -3,6 +3,18 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: cafe
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:cafe}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:12345678}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
   servlet:
     multipart:
       file-size-threshold: 0B
@@ -11,8 +23,8 @@ spring:
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  access-token-validity-time: ${JWT_ACCESS_TOKEN_VALIDITY_TIME}
-  refresh-token-validity-time: ${JWT_REFRESH_TOKEN_VALIDITY_TIME}
+  access-token-validity-time: ${JWT_ACCESS_TOKEN_VALIDITY_TIME:3600000}
+  refresh-token-validity-time: ${JWT_REFRESH_TOKEN_VALIDITY_TIME:1209600000}
 
 media:
   storage:

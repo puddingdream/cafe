@@ -45,6 +45,10 @@ public class MenuImageService {
     }
 
     public void deleteQuietly(String key) {
+        if (!StringUtils.hasText(key)) {
+            return;
+        }
+
         try {
             objectStorageClient.delete(key);
         } catch (RuntimeException exception) {
