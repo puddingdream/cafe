@@ -42,15 +42,19 @@ public class Member extends BaseEntity {
     private Long pointWalletId;
 
     @Builder
-    private Member(String email, String password, String name, String phoneNumber) {
+    private Member(String email, String password, String name, String phoneNumber, MemberRole role) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
-        this.role = MemberRole.USER;
+        this.role = role == null ? MemberRole.USER : role;
     }
 
     public void linkPointWallet(Long pointWalletId) {
         this.pointWalletId = pointWalletId;
+    }
+
+    public void changeRole(MemberRole role) {
+        this.role = role;
     }
 }

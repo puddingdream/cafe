@@ -43,7 +43,7 @@ public class MenuService {
     private final OrderStatisticsReader orderStatisticsReader;
     private final PopularMenuRankingService popularMenuRankingService;
 
-    @Cacheable(cacheNames = CacheNames.MENUS, key = "#category == null || #category.isBlank() ? 'all' : 'category:' + #category.trim().toUpperCase()")
+    @Cacheable(cacheNames = CacheNames.MENUS, key = "#p0 == null || #p0.isBlank() ? 'all' : 'category:' + #p0.trim().toUpperCase()")
     @Transactional(readOnly = true)
     public List<MenuGetResponse> getMenus(String category) {
         List<Menu> menus = category == null || category.isBlank()
