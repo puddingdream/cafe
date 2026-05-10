@@ -20,10 +20,10 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "member_id", nullable = false, unique = true)
     private Long memberId;
 
-    @Column(nullable = false, length = 512)
+    @Column(nullable = false, unique = true, length = 512)
     private String token;
 
     @Builder

@@ -5,6 +5,7 @@ import com.cafe.domain.menu.dto.MenuCreateRequest;
 import com.cafe.domain.menu.dto.MenuCreateResponse;
 import com.cafe.domain.menu.dto.MenuGetResponse;
 import com.cafe.domain.menu.dto.MenuUpdateRequest;
+import com.cafe.domain.menu.dto.PopularMenuResponse;
 import com.cafe.domain.menu.service.MenuService;
 import com.cafe.infrastructure.security.annotation.LoginUser;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
@@ -41,6 +42,11 @@ public class MenuController {
             @RequestParam(required = false) String category
     ) {
         return ResponseEntity.ok(ApiResponse.success(menuService.getMenus(category)));
+    }
+
+    @GetMapping("/menus/popular")
+    public ResponseEntity<ApiResponse<List<PopularMenuResponse>>> getPopularMenus() {
+        return ResponseEntity.ok(ApiResponse.success(menuService.getPopularMenus()));
     }
 
     @PutMapping(

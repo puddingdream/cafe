@@ -9,16 +9,21 @@ import com.cafe.domain.menu.dto.MenuCreateRequest;
 import com.cafe.domain.menu.dto.MenuCreateResponse;
 import com.cafe.domain.menu.dto.MenuGetResponse;
 import com.cafe.domain.menu.dto.MenuUpdateRequest;
+import com.cafe.domain.menu.dto.PopularMenuResponse;
 import com.cafe.domain.menu.entity.Menu;
 import com.cafe.domain.menu.enums.MenuCategory;
 import com.cafe.domain.menu.repository.MenuRepository;
 import com.cafe.domain.menu.support.MenuImageService;
+import com.cafe.domain.order.support.OrderStatisticsReader;
+import com.cafe.infrastructure.redis.CacheNames;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
 import com.cafe.infrastructure.storage.UploadedObject;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -29,6 +34,7 @@ public class MenuService {
     private final MemberReader memberReader;
     private final MenuImageService menuImageService;
     private final MenuTransactionService menuTransactionService;
+    private final OrderStatisticsReader orderStatisticsReader;
 
     @Transactional(readOnly = true)
     public List<MenuGetResponse> getMenus(String category) {
@@ -38,6 +44,20 @@ public class MenuService {
 
         return menus.stream()
                 .map(MenuGetResponse::from)
+                .toList();
+    }
+
+    @Cacheable(cacheNames = CacheNames.POPULAR_MENUS, key = "'top3:7d'")
+    @Transactional(readOnly = true)
+    public List<PopularMenuResponse> getPopularMenus() {
+        LocalDateTime orderedFrom = LocalDateTime.now().minusDays(7);
+
+        return orderStatisticsReader.findPopularMenus(orderedFrom)
+                .stream()
+                .map(popularMenu -> PopularMenuResponse.from(
+                        popularMenu.menu(),
+                        popularMenu.orderCount()
+                ))
                 .toList();
     }
 

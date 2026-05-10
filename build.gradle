@@ -26,12 +26,16 @@ dependencies {
     // Validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // AOP
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+
     // Persistence
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson:4.3.1'
 
     // Kafka
     implementation 'org.springframework.boot:spring-boot-starter-kafka'
@@ -69,4 +73,8 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
 }

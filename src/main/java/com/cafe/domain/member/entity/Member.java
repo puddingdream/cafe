@@ -31,14 +31,14 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberRole role;
 
-    @Column(unique = true)
+    @Column(name = "point_wallet_id", unique = true)
     private Long pointWalletId;
 
     @Builder

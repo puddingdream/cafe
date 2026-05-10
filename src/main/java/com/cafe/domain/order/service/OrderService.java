@@ -7,11 +7,7 @@ import com.cafe.domain.member.support.MemberReader;
 import com.cafe.domain.menu.entity.Menu;
 import com.cafe.domain.menu.enums.MenuStatus;
 import com.cafe.domain.menu.support.MenuReader;
-import com.cafe.domain.order.dto.OrderCancelResponse;
-import com.cafe.domain.order.dto.OrderCreateRequest;
-import com.cafe.domain.order.dto.OrderCreateResponse;
-import com.cafe.domain.order.dto.OrderGetResponse;
-import com.cafe.domain.order.dto.OrderSliceResponse;
+import com.cafe.domain.order.dto.*;
 import com.cafe.domain.order.entity.Order;
 import com.cafe.domain.order.entity.OrderItem;
 import com.cafe.domain.order.repository.OrderItemRepository;
@@ -21,8 +17,10 @@ import com.cafe.domain.point.entity.PointHistory;
 import com.cafe.domain.point.entity.PointWallet;
 import com.cafe.domain.point.repository.PointHistoryRepository;
 import com.cafe.domain.point.support.PointWalletReader;
+import com.cafe.infrastructure.redis.CacheNames;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -48,6 +46,7 @@ public class OrderService {
     private final MemberReader memberReader;
 
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCreateResponse createOrder(OrderCreateRequest request, LoginUserInfoDto loginUser) {
         Member member = memberReader.findById(loginUser.id());
         Map<Long, Integer> quantityByMenuId = getQuantityByMenuId(request);
@@ -109,8 +108,8 @@ public class OrderService {
         ));
         return OrderSliceResponse.from(responses);
     }
-
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCancelResponse cancelOrder(String orderNumber, LoginUserInfoDto loginUser) {
         Member member = memberReader.findById(loginUser.id());
         Order order = findOrderByOrderNumberForUpdate(orderNumber);
@@ -213,6 +212,8 @@ public class OrderService {
             throw new OrderException(OrderErrorCode.NOT_CANCELABLE_ORDER);
         }
     }
+
+
 
     private record OrderLine(Menu menu, int quantity, long totalPrice) {
     }

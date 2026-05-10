@@ -14,7 +14,13 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "orders")
+@Table(
+        name = "orders",
+        indexes = {
+                @Index(name = "idx_orders_member_ordered_at", columnList = "member_id, ordered_at"),
+                @Index(name = "idx_orders_status_ordered_at", columnList = "status, ordered_at")
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE orders SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
@@ -24,10 +30,10 @@ public class Order extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "order_number", nullable = false, unique = true)
     private String orderNumber;
 
-    @Column(nullable = false)
+    @Column(name = "member_id", nullable = false)
     private Long memberId;
 
     @Column(nullable = false)
@@ -37,7 +43,7 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "ordered_at", nullable = false)
     private LocalDateTime orderedAt;
 
     @Builder
