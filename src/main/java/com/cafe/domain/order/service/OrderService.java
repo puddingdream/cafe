@@ -13,11 +13,9 @@ import com.cafe.domain.order.entity.OrderItem;
 import com.cafe.domain.order.repository.OrderItemRepository;
 import com.cafe.domain.order.repository.OrderRepository;
 import com.cafe.domain.order.support.OrderNumberGenerator;
-import com.cafe.domain.point.entity.PointHistory;
-import com.cafe.domain.point.entity.PointWallet;
-import com.cafe.domain.point.repository.PointHistoryRepository;
-import com.cafe.domain.point.support.PointWalletReader;
+import com.cafe.domain.point.service.PointService;
 import com.cafe.infrastructure.redis.CacheNames;
+import com.cafe.infrastructure.redis.lock.RedisLock;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -40,12 +38,12 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final MenuReader menuReader;
-    private final PointWalletReader pointWalletReader;
-    private final PointHistoryRepository pointHistoryRepository;
+    private final PointService pointService;
     private final OrderNumberGenerator orderNumberGenerator;
     private final MemberReader memberReader;
 
     @Transactional
+    @RedisLock(key = "'lock:order:member:' + #loginUser.id()", waitTime = 3, leaseTime = 5)
     @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCreateResponse createOrder(OrderCreateRequest request, LoginUserInfoDto loginUser) {
         Member member = memberReader.findById(loginUser.id());
@@ -55,14 +53,7 @@ public class OrderService {
                 .mapToLong(OrderLine::totalPrice)
                 .sum();
 
-        PointWallet pointWallet = pointWalletReader.findByMemberIdForUpdate(member.getId());
-        long afterPoint = pointWallet.use(totalAmount);
-        pointHistoryRepository.save(PointHistory.use(
-                member.getId(),
-                pointWallet.getId(),
-                totalAmount,
-                afterPoint
-        ));
+        long afterPoint = pointService.usePoint(member.getId(), totalAmount);
 
         Order order = orderRepository.save(Order.builder()
                 .orderNumber(generateOrderNumber())
@@ -109,6 +100,7 @@ public class OrderService {
         return OrderSliceResponse.from(responses);
     }
     @Transactional
+    @RedisLock(key = "'lock:order:member:' + #loginUser.id()", waitTime = 3, leaseTime = 5)
     @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCancelResponse cancelOrder(String orderNumber, LoginUserInfoDto loginUser) {
         Member member = memberReader.findById(loginUser.id());
@@ -116,14 +108,7 @@ public class OrderService {
         validateOrderOwner(order, member.getId());
         validateCancelable(order);
 
-        PointWallet pointWallet = pointWalletReader.findByMemberIdForUpdate(member.getId());
-        long afterPoint = pointWallet.refund(order.getTotalAmount());
-        pointHistoryRepository.save(PointHistory.refund(
-                member.getId(),
-                pointWallet.getId(),
-                order.getTotalAmount(),
-                afterPoint
-        ));
+        long afterPoint = pointService.refundPoint(member.getId(), order.getTotalAmount());
 
         order.cancel();
 

@@ -1,7 +1,6 @@
 package com.cafe.domain.order.entity;
 
 import com.cafe.common.entity.BaseEntity;
-import com.cafe.domain.menu.entity.Menu;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,14 +32,6 @@ public class OrderItem extends BaseEntity {
 
     @Column(name = "menu_id", nullable = false)
     private Long menuId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", insertable = false, updatable = false)
-    private Order coffeeOrder;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_id", insertable = false, updatable = false)
-    private Menu menu;
 
     @Column(nullable = false)
     private String menuName;

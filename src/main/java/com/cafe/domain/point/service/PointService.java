@@ -28,7 +28,7 @@ public class PointService {
         validateChargePoint(request.chargePoint());
 
         Member member = memberReader.findByIdForUpdate(loginUser.id());
-        PointWallet pointWallet = findOrCreateWallet(member);
+        PointWallet pointWallet = findWalletForUpdate(member.getId());
 
         long afterPoint = pointWallet.charge(request.chargePoint());
         pointHistoryRepository.save(PointHistory.charge(
@@ -41,15 +41,51 @@ public class PointService {
         return new PointChargeResponse(member.getId(), request.chargePoint(), afterPoint);
     }
 
-    private PointWallet findOrCreateWallet(Member member) {
-        return pointWalletRepository.findWithLockByMemberId(member.getId())
-                .orElseGet(() -> {
-                    PointWallet pointWallet = pointWalletRepository.save(PointWallet.builder()
-                            .memberId(member.getId())
-                            .build());
-                    member.linkPointWallet(pointWallet.getId());
-                    return pointWallet;
-                });
+    @Transactional
+    public Long createWalletForMember(Long memberId) {
+        PointWallet pointWallet = pointWalletRepository.findByMemberId(memberId)
+                .orElseGet(() -> pointWalletRepository.save(PointWallet.builder()
+                        .memberId(memberId)
+                        .build()));
+
+        return pointWallet.getId();
+    }
+
+    @Transactional
+    public long usePoint(Long memberId, long usedPoint) {
+        PointWallet pointWallet = pointWalletRepository.findWithLockByMemberId(memberId)
+                .orElseThrow(() -> new PointException(PointErrorCode.POINT_WALLET_NOT_FOUND));
+
+        long afterPoint = pointWallet.use(usedPoint);
+        pointHistoryRepository.save(PointHistory.use(
+                memberId,
+                pointWallet.getId(),
+                usedPoint,
+                afterPoint
+        ));
+
+        return afterPoint;
+    }
+
+    @Transactional
+    public long refundPoint(Long memberId, long refundPoint) {
+        PointWallet pointWallet = pointWalletRepository.findWithLockByMemberId(memberId)
+                .orElseThrow(() -> new PointException(PointErrorCode.POINT_WALLET_NOT_FOUND));
+
+        long afterPoint = pointWallet.refund(refundPoint);
+        pointHistoryRepository.save(PointHistory.refund(
+                memberId,
+                pointWallet.getId(),
+                refundPoint,
+                afterPoint
+        ));
+
+        return afterPoint;
+    }
+
+    private PointWallet findWalletForUpdate(Long memberId) {
+        return pointWalletRepository.findWithLockByMemberId(memberId)
+                .orElseThrow(() -> new PointException(PointErrorCode.POINT_WALLET_NOT_FOUND));
     }
 
     private void validateChargePoint(long chargePoint) {

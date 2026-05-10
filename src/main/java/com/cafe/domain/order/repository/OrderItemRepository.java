@@ -2,9 +2,7 @@ package com.cafe.domain.order.repository;
 
 import com.cafe.domain.order.entity.OrderItem;
 import com.cafe.domain.order.enums.OrderStatus;
-
 import com.cafe.domain.order.repository.projection.PopularMenuProjection;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,8 +22,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
                 sum(orderItem.quantity)
             )
             from OrderItem orderItem
-            join orderItem.coffeeOrder coffeeOrder
-            join orderItem.menu menu
+            join Order coffeeOrder on coffeeOrder.id = orderItem.orderId
+            join Menu menu on menu.id = orderItem.menuId
             where coffeeOrder.status = :status
               and coffeeOrder.orderedAt >= :orderedFrom
             group by menu
@@ -34,7 +32,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             """)
     List<PopularMenuProjection> findPopularMenus(
             @Param("status") OrderStatus status,
-            @Param("orderedFrom") LocalDateTime orderedFrom,
-            Pageable pageable
+            @Param("orderedFrom") LocalDateTime orderedFrom
     );
 }
