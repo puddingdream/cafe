@@ -49,6 +49,11 @@ public class MenuController {
         return ResponseEntity.ok(ApiResponse.success(menuService.getPopularMenus()));
     }
 
+    @GetMapping("/menus/popular/v2")
+    public ResponseEntity<ApiResponse<List<PopularMenuResponse>>> getPopularMenusV2() {
+        return ResponseEntity.ok(ApiResponse.success(menuService.getPopularMenusV2()));
+    }
+
     @PutMapping(
             value = "/admin/menus/{menuId}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE

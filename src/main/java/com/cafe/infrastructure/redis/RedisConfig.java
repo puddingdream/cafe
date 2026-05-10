@@ -46,6 +46,7 @@ public class RedisConfig {
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(cacheConfiguration)
                 .withInitialCacheConfigurations(Map.of(
+                        CacheNames.MENUS, cacheConfiguration.entryTtl(Duration.ofMinutes(5)),
                         CacheNames.POPULAR_MENUS, cacheConfiguration.entryTtl(Duration.ofSeconds(30))
                 ))
                 .build();

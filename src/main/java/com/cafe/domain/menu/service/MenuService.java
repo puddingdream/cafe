@@ -14,17 +14,23 @@ import com.cafe.domain.menu.entity.Menu;
 import com.cafe.domain.menu.enums.MenuCategory;
 import com.cafe.domain.menu.repository.MenuRepository;
 import com.cafe.domain.menu.support.MenuImageService;
+import com.cafe.domain.menu.support.PopularMenuRankingItem;
+import com.cafe.domain.menu.support.PopularMenuRankingService;
 import com.cafe.domain.order.support.OrderStatisticsReader;
 import com.cafe.infrastructure.redis.CacheNames;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
 import com.cafe.infrastructure.storage.UploadedObject;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +41,9 @@ public class MenuService {
     private final MenuImageService menuImageService;
     private final MenuTransactionService menuTransactionService;
     private final OrderStatisticsReader orderStatisticsReader;
+    private final PopularMenuRankingService popularMenuRankingService;
 
+    @Cacheable(cacheNames = CacheNames.MENUS, key = "#category == null || #category.isBlank() ? 'all' : 'category:' + #category.trim().toUpperCase()")
     @Transactional(readOnly = true)
     public List<MenuGetResponse> getMenus(String category) {
         List<Menu> menus = category == null || category.isBlank()
@@ -61,6 +69,26 @@ public class MenuService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PopularMenuResponse> getPopularMenusV2() {
+        List<PopularMenuRankingItem> rankings = popularMenuRankingService.findTopMenus(3);
+        List<Long> menuIds = rankings.stream()
+                .map(PopularMenuRankingItem::menuId)
+                .toList();
+        Map<Long, Menu> menuById = menuRepository.findAllById(menuIds)
+                .stream()
+                .collect(Collectors.toMap(Menu::getId, Function.identity()));
+
+        return rankings.stream()
+                .filter(ranking -> menuById.containsKey(ranking.menuId()))
+                .map(ranking -> PopularMenuResponse.from(
+                        menuById.get(ranking.menuId()),
+                        ranking.orderCount()
+                ))
+                .toList();
+    }
+
+    @CacheEvict(cacheNames = CacheNames.MENUS, allEntries = true)
     public MenuCreateResponse createMenu(MenuCreateRequest request, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
         validatePrice(request.price());
@@ -76,6 +104,7 @@ public class MenuService {
         }
     }
 
+    @CacheEvict(cacheNames = CacheNames.MENUS, allEntries = true)
     public MenuGetResponse updateMenu(Long menuId, MenuUpdateRequest request, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
         validatePrice(request.price());
@@ -103,11 +132,13 @@ public class MenuService {
         }
     }
 
+    @CacheEvict(cacheNames = CacheNames.MENUS, allEntries = true)
     public MenuGetResponse toggleMenuStatus(Long menuId, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
         return menuTransactionService.toggleMenuStatus(menuId);
     }
 
+    @CacheEvict(cacheNames = CacheNames.MENUS, allEntries = true)
     public void deleteMenu(Long menuId, LoginUserInfoDto loginUser) {
         validateAdmin(loginUser.id());
 

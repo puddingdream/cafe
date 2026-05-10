@@ -17,7 +17,8 @@ public final class PublicPathPatterns {
 
     public static final String[] PUBLIC_GET = {
             "/api/menus",
-            "/api/menus/popular"
+            "/api/menus/popular",
+            "/api/menus/popular/v2"
     };
 
     private PublicPathPatterns() {

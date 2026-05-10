@@ -20,8 +20,24 @@ public class KafkaConfig {
     }
 
     @Bean
+    public NewTopic orderCanceledTopic() {
+        return TopicBuilder.name(KafkaTopics.ORDER_CANCELED)
+                .partitions(KafkaTopics.DEFAULT_PARTITIONS)
+                .replicas(KafkaTopics.DEFAULT_REPLICATION_FACTOR)
+                .build();
+    }
+
+    @Bean
     public NewTopic orderPaidDltTopic() {
         return TopicBuilder.name(KafkaTopics.ORDER_PAID_DLT)
+                .partitions(KafkaTopics.DEFAULT_PARTITIONS)
+                .replicas(KafkaTopics.DEFAULT_REPLICATION_FACTOR)
+                .build();
+    }
+
+    @Bean
+    public NewTopic orderCanceledDltTopic() {
+        return TopicBuilder.name(KafkaTopics.ORDER_CANCELED_DLT)
                 .partitions(KafkaTopics.DEFAULT_PARTITIONS)
                 .replicas(KafkaTopics.DEFAULT_REPLICATION_FACTOR)
                 .build();

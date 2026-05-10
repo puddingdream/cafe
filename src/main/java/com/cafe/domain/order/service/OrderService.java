@@ -10,6 +10,8 @@ import com.cafe.domain.menu.support.MenuReader;
 import com.cafe.domain.order.dto.*;
 import com.cafe.domain.order.entity.Order;
 import com.cafe.domain.order.entity.OrderItem;
+import com.cafe.domain.order.event.OrderCanceledEvent;
+import com.cafe.domain.order.event.OrderPaidEvent;
 import com.cafe.domain.order.repository.OrderItemRepository;
 import com.cafe.domain.order.repository.OrderRepository;
 import com.cafe.domain.order.support.OrderNumberGenerator;
@@ -19,6 +21,7 @@ import com.cafe.infrastructure.redis.lock.RedisLock;
 import com.cafe.infrastructure.security.dto.LoginUserInfoDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,7 @@ public class OrderService {
     private final PointService pointService;
     private final OrderNumberGenerator orderNumberGenerator;
     private final MemberReader memberReader;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @RedisLock(key = "'lock:order:member:' + #loginUser.id()", waitTime = 3, leaseTime = 5)
@@ -70,6 +74,8 @@ public class OrderService {
                         .quantity(orderLine.quantity())
                         .build())
                 .toList());
+
+        eventPublisher.publishEvent(OrderPaidEvent.of(order, orderItems));
 
         return OrderCreateResponse.of(order, afterPoint, orderItems);
     }
@@ -113,6 +119,8 @@ public class OrderService {
         order.cancel();
 
         List<OrderItem> orderItems = orderItemRepository.findAllByOrderIdOrderByIdAsc(order.getId());
+        eventPublisher.publishEvent(OrderCanceledEvent.of(order, orderItems));
+
         return OrderCancelResponse.of(order, afterPoint, orderItems);
     }
 
