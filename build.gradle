@@ -73,6 +73,9 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    if (System.getProperty('performance') != null) {
+        systemProperty 'performance', System.getProperty('performance')
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
