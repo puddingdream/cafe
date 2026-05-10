@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RedisLock {
+    // 메서드에 붙여 Redis 분산락을 AOP로 적용한다.
 
     String key();
 

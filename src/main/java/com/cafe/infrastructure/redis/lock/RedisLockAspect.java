@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RedisLockAspect {
+    // @RedisLock이 붙은 메서드 실행 전후로 락 획득/해제를 처리한다.
     private final LockService lockService;
     private final ExpressionParser parser = new SpelExpressionParser();
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
@@ -33,6 +34,7 @@ public class RedisLockAspect {
 
     @Around("@annotation(redisLock)")
     public Object around(ProceedingJoinPoint joinPoint, RedisLock redisLock) throws Throwable {
+        // 트랜잭션보다 바깥에서 락을 잡아 같은 사용자 요청이 동시에 트랜잭션에 진입하지 않게 한다.
         String key = resolveKey(joinPoint, redisLock.key());
 
         lockService.lock(key, redisLock.waitTime(), redisLock.leaseTime(), redisLock.timeUnit());
@@ -44,6 +46,7 @@ public class RedisLockAspect {
     }
 
     private String resolveKey(ProceedingJoinPoint joinPoint, String keyExpression) {
+        // SpEL 표현식에서 #loginUser.id(), #p0 같은 파라미터 참조를 사용할 수 있게 컨텍스트를 구성한다.
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         Object[] args = joinPoint.getArgs();

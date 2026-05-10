@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum MenuErrorCode implements ErrorCodeType {
+    // 메뉴 관리와 메뉴 이미지 업로드에서 사용하는 에러 코드다.
     FORBIDDEN_MENU_MANAGEMENT(HttpStatus.FORBIDDEN, "MENU001", "관리자만 가능한 기능입니다."),
     INVALID_MENU_PRICE(HttpStatus.BAD_REQUEST, "MENU002", "메뉴 가격은 0원보다 커야 합니다."),
     INVALID_MENU_CATEGORY(HttpStatus.BAD_REQUEST, "MENU003", "존재하지 않는 메뉴 카테고리입니다."),

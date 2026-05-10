@@ -17,6 +17,7 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLDelete(sql = "UPDATE members SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Member extends BaseEntity {
+    // 로그인 사용자 정보와 권한, 연결된 포인트 지갑 ID를 보관하는 회원 엔티티다.
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,10 +52,12 @@ public class Member extends BaseEntity {
     }
 
     public void linkPointWallet(Long pointWalletId) {
+        // 회원 생성 직후 만들어진 포인트 지갑을 회원과 연결한다.
         this.pointWalletId = pointWalletId;
     }
 
     public void changeRole(MemberRole role) {
+        // 더미 데이터나 관리자 기능에서 회원 권한을 변경할 때 사용한다.
         this.role = role;
     }
 }

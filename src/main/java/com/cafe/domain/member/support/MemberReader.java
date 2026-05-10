@@ -12,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberReader {
+    // 다른 도메인이 MemberRepository를 직접 뒤지지 않도록 회원 조회 책임을 모은다.
     private final MemberRepository memberRepository;
 
     public Member findByEmail(String email) {
+        // 로그인에서는 이메일 존재 여부를 자세히 노출하지 않고 인증 실패로 처리한다.
         return memberRepository.findByEmail(email)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.INVALID_CREDENTIALS));
     }
@@ -25,6 +27,7 @@ public class MemberReader {
     }
 
     public Member findByIdForUpdate(Long memberId) {
+        // 포인트 충전처럼 회원 row까지 직렬화하고 싶을 때 비관락으로 조회한다.
         return memberRepository.findWithLockById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
     }

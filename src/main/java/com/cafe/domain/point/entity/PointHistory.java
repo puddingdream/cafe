@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PointHistory extends BaseEntity {
+    // 포인트 잔액 변경 이력을 남겨 충전/사용/환불 추적이 가능하게 한다.
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +59,7 @@ public class PointHistory extends BaseEntity {
     }
 
     public static PointHistory charge(Long memberId, Long pointWalletId, long chargePoint, long afterPoint) {
+        // 충전 거래 이력 생성 팩토리다.
         return PointHistory.builder()
                 .memberId(memberId)
                 .pointWalletId(pointWalletId)
@@ -68,6 +70,7 @@ public class PointHistory extends BaseEntity {
     }
 
     public static PointHistory use(Long memberId, Long pointWalletId, long usedPoint, long afterPoint) {
+        // 주문 결제에 사용된 포인트 이력 생성 팩토리다.
         return PointHistory.builder()
                 .memberId(memberId)
                 .pointWalletId(pointWalletId)
@@ -78,6 +81,7 @@ public class PointHistory extends BaseEntity {
     }
 
     public static PointHistory refund(Long memberId, Long pointWalletId, long refundPoint, long afterPoint) {
+        // 주문 취소로 환불된 포인트 이력 생성 팩토리다.
         return PointHistory.builder()
                 .memberId(memberId)
                 .pointWalletId(pointWalletId)

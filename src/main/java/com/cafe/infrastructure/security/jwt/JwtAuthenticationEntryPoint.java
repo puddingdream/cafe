@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+    // Security filter 단계에서 발생한 미인증 오류는 GlobalExceptionHandler가 잡지 못하므로 직접 응답을 만든다.
     private final JsonMapper objectMapper;
 
     @Override
@@ -43,6 +44,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private void setResponse(HttpServletRequest request, HttpServletResponse response, MemberErrorCode errorCode)
             throws IOException {
+        // 인증 실패 응답도 ApiResponse 구조와 비슷하게 맞춰 클라이언트 처리를 단순하게 한다.
         log.warn("Authentication failed. code={}, path={}", errorCode.getCode(), request.getRequestURI());
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -14,9 +14,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderStatisticsReader {
+    // 인기 메뉴 V1처럼 주문 통계성 조회를 담당한다.
     private final OrderItemRepository orderItemRepository;
 
     public List<PopularMenuProjection> findPopularMenus(LocalDateTime orderedFrom) {
+        // RDB 원본 데이터 기준으로 최근 7일 PAID 주문만 집계한다.
         return orderItemRepository.findPopularMenus(
                 OrderStatus.PAID,
                 orderedFrom

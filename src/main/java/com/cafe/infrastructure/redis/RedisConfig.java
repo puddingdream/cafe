@@ -18,9 +18,11 @@ import java.util.Map;
 @Configuration
 @EnableCaching
 public class RedisConfig {
+    // RedisTemplate과 Spring Cache용 RedisCacheManager 설정이다.
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory, JsonMapper jsonMapper) {
+        // key는 문자열, value는 JSON으로 저장해 사람이 Redis key를 확인하기 쉽게 한다.
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
         GenericJacksonJsonRedisSerializer jsonSerializer = new GenericJacksonJsonRedisSerializer(jsonMapper);
 
@@ -36,6 +38,7 @@ public class RedisConfig {
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory, JsonMapper jsonMapper) {
+        // cache name별 TTL을 다르게 둔다. 메뉴는 비교적 길게, 인기 메뉴는 짧게 유지한다.
         GenericJacksonJsonRedisSerializer jsonSerializer = new GenericJacksonJsonRedisSerializer(jsonMapper);
         RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))

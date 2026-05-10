@@ -21,12 +21,14 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class MenuImageService {
+    // 메뉴 이미지 검증, 저장 key 생성, 외부 저장소 업로드/삭제를 담당한다.
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final ObjectStorageClient objectStorageClient;
     private final MediaStorageProperties properties;
 
     public UploadedObject uploadOptional(MultipartFile file) {
+        // 수정 API에서는 이미지가 없으면 기존 이미지를 유지한다.
         if (file == null || file.isEmpty()) {
             return null;
         }
@@ -36,6 +38,7 @@ public class MenuImageService {
     }
 
     public UploadedObject uploadRequired(MultipartFile file) {
+        // 생성 API에서는 대표 이미지가 필수다.
         if (file == null || file.isEmpty()) {
             throw new MenuException(MenuErrorCode.INVALID_MENU_IMAGE);
         }
@@ -45,6 +48,7 @@ public class MenuImageService {
     }
 
     public void deleteQuietly(String key) {
+        // 보상 삭제/기존 이미지 삭제 실패가 본 트랜잭션 성공을 뒤집지 않도록 로그만 남긴다.
         if (!StringUtils.hasText(key)) {
             return;
         }
@@ -57,6 +61,7 @@ public class MenuImageService {
     }
 
     private void validateImage(MultipartFile file) {
+        // content-type과 확장자를 모두 확인해 이미지가 아닌 파일 업로드를 막는다.
         if (file.getSize() > properties.getMaxImageSizeBytes()) {
             throw new MenuException(MenuErrorCode.MENU_IMAGE_TOO_LARGE);
         }
@@ -74,6 +79,7 @@ public class MenuImageService {
     }
 
     private String createStorageKey(MultipartFile file) {
+        // 날짜 디렉터리와 UUID를 사용해 파일명 충돌을 피한다.
         String date = LocalDate.now().format(DATE_FORMATTER);
         return properties.normalizedKeyPrefix()
                 + "/"
@@ -85,6 +91,7 @@ public class MenuImageService {
     }
 
     private String extractExtension(MultipartFile file) {
+        // 확장자 검증은 저장 key 생성과 허용 확장자 체크에 함께 사용된다.
         String filename = file.getOriginalFilename();
         if (!StringUtils.hasText(filename)) {
             throw new MenuException(MenuErrorCode.INVALID_MENU_IMAGE);

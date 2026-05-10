@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 @SQLDelete(sql = "UPDATE orders SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Order extends BaseEntity {
+    // 주문 마스터 엔티티다. 포인트 결제 완료 후 PAID 상태로 생성된다.
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,6 +49,7 @@ public class Order extends BaseEntity {
 
     @Builder
     private Order(String orderNumber, Long memberId, long totalAmount) {
+        // 주문 생성 시점에 주문번호와 주문 시각을 확정한다.
         this.orderNumber = orderNumber;
         this.memberId = memberId;
         this.totalAmount = totalAmount;
@@ -56,10 +58,12 @@ public class Order extends BaseEntity {
     }
 
     public void cancel() {
+        // 주문 취소는 삭제가 아니라 상태 변경으로 남긴다.
         this.status = OrderStatus.CANCELED;
     }
 
     public boolean isPaid() {
+        // 취소 가능 여부와 인기 메뉴 집계 기준을 판단할 때 사용한다.
         return this.status == OrderStatus.PAID;
     }
 }

@@ -1,6 +1,7 @@
 package com.cafe.infrastructure.security;
 
 public final class PublicPathPatterns {
+    // SecurityConfig와 JwtAuthenticationFilter가 함께 사용하는 공개 경로 목록이다.
     public static final String[] ANY_METHOD = {
             "/error",
             "/favicon.ico",

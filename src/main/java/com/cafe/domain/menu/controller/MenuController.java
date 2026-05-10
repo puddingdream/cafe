@@ -22,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class MenuController {
+    // 메뉴 공개 조회와 관리자 메뉴 관리 API를 제공한다.
 
     private final MenuService menuService;
 

@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public class MenuException extends BusinessException {
+    // 메뉴 도메인의 비즈니스 예외다.
 
     public MenuException(ErrorCodeType errorCode) {
         super(errorCode);

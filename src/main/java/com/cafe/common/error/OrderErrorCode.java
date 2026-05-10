@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum OrderErrorCode implements ErrorCodeType {
+    // 주문 생성/조회/취소에서 사용하는 에러 코드다.
     EMPTY_ORDER_ITEMS(HttpStatus.BAD_REQUEST, "O001", "주문할 메뉴를 선택해야 합니다."),
     INVALID_ORDER_QUANTITY(HttpStatus.BAD_REQUEST, "O002", "주문 수량은 0보다 커야 합니다."),
     ORDER_MENU_NOT_FOUND(HttpStatus.NOT_FOUND, "O003", "주문 메뉴를 찾을 수 없습니다."),

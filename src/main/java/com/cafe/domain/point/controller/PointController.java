@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/points")
 public class PointController {
+    // 과제 요구사항용 포인트 충전 API를 제공한다.
     private final PointService pointService;
 
     @PostMapping("/charge")

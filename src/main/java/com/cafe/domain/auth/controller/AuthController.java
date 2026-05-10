@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
 public class AuthController {
+    // 인증 관련 HTTP 요청을 받고 실제 로직은 AuthService로 위임한다.
     private final AuthService authService;
 
     @PostMapping("/signup")

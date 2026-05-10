@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class S3ObjectStorageClient implements ObjectStorageClient {
+    // AWS SDK S3Client를 이용해 메뉴 이미지를 업로드/삭제하는 실제 구현체다.
     private final S3Client s3Client;
     private final MediaStorageProperties properties;
 
@@ -24,6 +25,7 @@ public class S3ObjectStorageClient implements ObjectStorageClient {
 
     @Override
     public UploadedObject upload(MultipartFile file, String key) {
+        // MultipartFile stream을 그대로 S3에 업로드하고 공개 URL 정보를 반환한다.
         if (!StringUtils.hasText(properties.getBucket())) {
             throw new MenuException(MenuErrorCode.MENU_IMAGE_STORAGE_DISABLED);
         }
@@ -35,6 +37,7 @@ public class S3ObjectStorageClient implements ObjectStorageClient {
                     .contentLength(file.getSize());
 
             if (StringUtils.hasText(file.getContentType())) {
+                // contentType은 브라우저/스토리지에서 이미지 미리보기와 다운로드 처리에 사용된다.
                 request.contentType(file.getContentType());
             }
 
@@ -47,6 +50,7 @@ public class S3ObjectStorageClient implements ObjectStorageClient {
 
     @Override
     public void delete(String key) {
+        // key가 없거나 bucket 설정이 없으면 삭제할 대상이 없으므로 조용히 종료한다.
         if (!StringUtils.hasText(key) || !StringUtils.hasText(properties.getBucket())) {
             return;
         }
@@ -62,6 +66,7 @@ public class S3ObjectStorageClient implements ObjectStorageClient {
     }
 
     private String buildPublicUrl(String key) {
+        // CDN/base URL이 있으면 우선 사용하고, 없으면 AWS S3 기본 공개 URL 형식을 만든다.
         if (StringUtils.hasText(properties.getPublicBaseUrl())) {
             return properties.getPublicBaseUrl().replaceAll("/+$", "") + "/" + key;
         }

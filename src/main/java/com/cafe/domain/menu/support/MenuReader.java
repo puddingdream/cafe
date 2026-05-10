@@ -15,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MenuReader {
+    // 주문 도메인이 메뉴 저장소를 직접 알지 않도록 메뉴 조회를 모아둔다.
 
     private final MenuRepository menuRepository;
 

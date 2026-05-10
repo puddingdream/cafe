@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.dummy-data", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class DummyDataInitializer implements ApplicationRunner {
+    // 로컬 수동 테스트를 빠르게 할 수 있도록 기본 계정과 메뉴를 시딩한다.
 
     private static final String TEST_PASSWORD = "password123";
 
@@ -36,6 +37,7 @@ public class DummyDataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        // 이미 존재하는 데이터는 건너뛰므로 애플리케이션을 여러 번 실행해도 중복 생성되지 않는다.
         createMemberIfAbsent(
                 "admin@cafe.test",
                 "Cafe Admin",
@@ -66,6 +68,7 @@ public class DummyDataInitializer implements ApplicationRunner {
     }
 
     private void createMemberIfAbsent(String email, String name, String phoneNumber, MemberRole role, long initialPoint) {
+        // 테스트 계정은 권한과 초기 포인트 지갑까지 함께 준비한다.
         Member member = memberRepository.findByEmail(email)
                 .orElseGet(() -> memberRepository.save(Member.builder()
                         .email(email)
@@ -87,6 +90,7 @@ public class DummyDataInitializer implements ApplicationRunner {
     }
 
     private void createWallet(Member member, long initialPoint) {
+        // 지갑 생성과 초기 충전 이력을 함께 남겨 포인트 흐름을 추적할 수 있게 한다.
         PointWallet pointWallet = PointWallet.builder()
                 .memberId(member.getId())
                 .build();
@@ -103,6 +107,7 @@ public class DummyDataInitializer implements ApplicationRunner {
     }
 
     private void createMenuIfAbsent(String name, String description, int price, MenuCategory category, String imageUrl) {
+        // 더미 메뉴는 S3 업로드 없이 placeholder 이미지 URL로 만든다.
         if (menuRepository.existsByName(name)) {
             return;
         }

@@ -19,12 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PointService {
+    // 포인트 지갑의 생성, 충전, 사용, 환불을 담당한다.
     private final PointWalletRepository pointWalletRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final MemberReader memberReader;
 
     @Transactional
     public PointChargeResponse charge(PointChargeRequest request, LoginUserInfoDto loginUser) {
+        // 충전은 지갑 row를 비관락으로 잠근 뒤 잔액과 이력을 함께 저장한다.
         validateChargePoint(request.chargePoint());
 
         Member member = memberReader.findByIdForUpdate(loginUser.id());
@@ -43,6 +45,7 @@ public class PointService {
 
     @Transactional
     public Long createWalletForMember(Long memberId) {
+        // 회원 생성 시 기본 지갑을 만든다. 이미 있으면 기존 지갑을 반환해 중복 생성을 피한다.
         PointWallet pointWallet = pointWalletRepository.findByMemberId(memberId)
                 .orElseGet(() -> pointWalletRepository.save(PointWallet.builder()
                         .memberId(memberId)
@@ -53,6 +56,7 @@ public class PointService {
 
     @Transactional
     public long usePoint(Long memberId, long usedPoint) {
+        // 주문 결제에서 호출된다. 지갑 row lock으로 동시 차감을 직렬화한다.
         PointWallet pointWallet = pointWalletRepository.findWithLockByMemberId(memberId)
                 .orElseThrow(() -> new PointException(PointErrorCode.POINT_WALLET_NOT_FOUND));
 
@@ -69,6 +73,7 @@ public class PointService {
 
     @Transactional
     public long refundPoint(Long memberId, long refundPoint) {
+        // 주문 취소에서 호출된다. 환불 역시 같은 지갑 row lock을 사용한다.
         PointWallet pointWallet = pointWalletRepository.findWithLockByMemberId(memberId)
                 .orElseThrow(() -> new PointException(PointErrorCode.POINT_WALLET_NOT_FOUND));
 

@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderService {
+    // 주문 생성/조회/취소를 담당한다. 포인트 변경과 주문 저장은 하나의 트랜잭션으로 묶는다.
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -50,6 +51,7 @@ public class OrderService {
     @RedisLock(key = "'lock:order:member:' + #loginUser.id()", waitTime = 3, leaseTime = 5)
     @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCreateResponse createOrder(OrderCreateRequest request, LoginUserInfoDto loginUser) {
+        // 같은 사용자의 동시 주문은 Redis 분산락으로 먼저 직렬화하고, 포인트는 DB row lock으로 한 번 더 보호한다.
         Member member = memberReader.findById(loginUser.id());
         Map<Long, Integer> quantityByMenuId = getQuantityByMenuId(request);
         List<OrderLine> orderLines = getOrderLines(quantityByMenuId);
@@ -57,6 +59,7 @@ public class OrderService {
                 .mapToLong(OrderLine::totalPrice)
                 .sum();
 
+        // 포인트 차감이 실패하면 주문 저장까지 진행하지 않는다.
         long afterPoint = pointService.usePoint(member.getId(), totalAmount);
 
         Order order = orderRepository.save(Order.builder()
@@ -75,12 +78,14 @@ public class OrderService {
                         .build())
                 .toList());
 
+        // 트랜잭션 커밋 이후 Kafka로 전달될 Spring 이벤트다.
         eventPublisher.publishEvent(OrderPaidEvent.of(order, orderItems));
 
         return OrderCreateResponse.of(order, afterPoint, orderItems);
     }
 
     public OrderGetResponse getOrder(String orderNumber, LoginUserInfoDto loginUser) {
+        // 주문번호로 단건 조회하되, 자신의 주문만 볼 수 있게 소유자를 검증한다.
         Member member = memberReader.findById(loginUser.id());
         Order order = findOrderByOrderNumber(orderNumber);
         validateOrderOwner(order, member.getId());
@@ -90,6 +95,7 @@ public class OrderService {
     }
 
     public OrderSliceResponse getMyOrders(LoginUserInfoDto loginUser, Pageable pageable) {
+        // 주문 목록은 Slice로 조회하고, 주문 상세는 orderId IN 쿼리로 한 번에 가져와 N+1을 피한다.
         Member member = memberReader.findById(loginUser.id());
         Slice<Order> orders = orderRepository.findAllByMemberIdOrderByOrderedAtDesc(member.getId(), pageable);
         List<Long> orderIds = orders.getContent().stream()
@@ -105,10 +111,12 @@ public class OrderService {
         ));
         return OrderSliceResponse.from(responses);
     }
+
     @Transactional
     @RedisLock(key = "'lock:order:member:' + #loginUser.id()", waitTime = 3, leaseTime = 5)
     @CacheEvict(cacheNames = CacheNames.POPULAR_MENUS, allEntries = true)
     public OrderCancelResponse cancelOrder(String orderNumber, LoginUserInfoDto loginUser) {
+        // 취소는 주문 row를 잠근 뒤 상태를 확인하고 포인트를 환불한다.
         Member member = memberReader.findById(loginUser.id());
         Order order = findOrderByOrderNumberForUpdate(orderNumber);
         validateOrderOwner(order, member.getId());
@@ -125,6 +133,7 @@ public class OrderService {
     }
 
     private Map<Long, Integer> getQuantityByMenuId(OrderCreateRequest request) {
+        // 같은 메뉴가 여러 번 들어오면 수량을 합산해 하나의 주문 라인으로 만든다.
         if (request.items() == null || request.items().isEmpty()) {
             throw new OrderException(OrderErrorCode.EMPTY_ORDER_ITEMS);
         }
@@ -132,6 +141,7 @@ public class OrderService {
         Map<Long, Integer> quantityByMenuId = new LinkedHashMap<>();
         for (OrderCreateRequest.Item item : request.items()) {
             validateOrderItem(item);
+            // Map.merge는 같은 menuId가 이미 있으면 기존 수량에 새 수량을 더한다.
             quantityByMenuId.merge(item.menuId(), item.quantity(), Integer::sum);
         }
 
@@ -148,6 +158,7 @@ public class OrderService {
     }
 
     private List<OrderLine> getOrderLines(Map<Long, Integer> quantityByMenuId) {
+        // 서버가 메뉴 가격을 직접 조회해 총액을 계산한다.
         List<Menu> menus = menuReader.findAllByIds(quantityByMenuId.keySet());
         if (menus.size() != quantityByMenuId.size()) {
             throw new OrderException(OrderErrorCode.ORDER_MENU_NOT_FOUND);
@@ -185,6 +196,7 @@ public class OrderService {
     }
 
     private String generateOrderNumber() {
+        // 랜덤 6자리 충돌 가능성이 낮지만, 생성 직후 몇 번은 DB 중복 여부를 확인한다.
         for (int count = 0; count < 5; count++) {
             String orderNumber = orderNumberGenerator.generate();
             if (!orderRepository.existsByOrderNumber(orderNumber)) {
@@ -209,5 +221,6 @@ public class OrderService {
 
 
     private record OrderLine(Menu menu, int quantity, long totalPrice) {
+        // OrderItem을 저장하기 전, 메뉴 객체와 수량/금액을 묶어두는 내부 계산 모델이다.
     }
 }

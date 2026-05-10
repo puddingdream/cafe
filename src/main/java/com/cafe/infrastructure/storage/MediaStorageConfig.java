@@ -18,10 +18,12 @@ import java.net.URI;
 @Configuration
 @EnableConfigurationProperties(MediaStorageProperties.class)
 public class MediaStorageConfig {
+    // media.storage.enabled 값에 따라 실제 S3 client 또는 disabled fallback을 등록한다.
 
     @Bean
     @ConditionalOnProperty(prefix = "media.storage", name = "enabled", havingValue = "true")
     public S3Client s3Client(MediaStorageProperties properties) {
+        // AWS S3 또는 endpointOverride가 있는 S3-compatible storage client를 만든다.
         S3ClientBuilderFactory builderFactory = new S3ClientBuilderFactory(properties);
         return builderFactory.build();
     }
@@ -35,11 +37,13 @@ public class MediaStorageConfig {
     @Bean
     @ConditionalOnMissingBean(ObjectStorageClient.class)
     public ObjectStorageClient disabledObjectStorageClient() {
+        // 저장소 설정이 없어도 앱 부팅은 허용하되, 실제 업로드/삭제는 실패시킨다.
         return new DisabledObjectStorageClient();
     }
 
     private record S3ClientBuilderFactory(MediaStorageProperties properties) {
         private S3Client build() {
+            // 정적 credential이 있으면 사용하고, 없으면 AWS DefaultCredentialsProvider 체인을 사용한다.
             software.amazon.awssdk.services.s3.S3ClientBuilder builder = S3Client.builder()
                     .region(Region.of(properties.getRegion()));
 

@@ -20,6 +20,7 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLDelete(sql = "UPDATE menus SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Menu extends BaseEntity {
+    // 카페에서 판매하는 메뉴 정보다. 재고 수량 대신 판매 상태(ACTIVE/INACTIVE)로 주문 가능 여부를 관리한다.
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,6 +49,7 @@ public class Menu extends BaseEntity {
 
     @Builder
     private Menu(String name, String description, String imageUrl, String imageKey, int price, MenuCategory category) {
+        // 생성 시점부터 가격과 카테고리의 기본 도메인 규칙을 강제한다.
         validatePrice(price);
         validateCategory(category);
         this.name = name;
@@ -60,11 +62,13 @@ public class Menu extends BaseEntity {
     }
 
     public void updateImage(String imageUrl, String imageKey) {
+        // DB에는 이미지 바이너리 대신 외부 저장소 URL과 key만 저장한다.
         this.imageUrl = imageUrl;
         this.imageKey = imageKey;
     }
 
     public void updateInfo(String name, String description, int price, MenuCategory category) {
+        // 이미지 외의 메뉴 기본 정보를 갱신한다.
         validatePrice(price);
         validateCategory(category);
         this.name = name;
@@ -74,10 +78,12 @@ public class Menu extends BaseEntity {
     }
 
     public void toggleStatus() {
+        // 관리자 화면에서 판매중/판매중지를 토글할 때 사용한다.
         this.status = this.status == MenuStatus.ACTIVE ? MenuStatus.INACTIVE : MenuStatus.ACTIVE;
     }
 
     public void changeStatus(MenuStatus status) {
+        // 더미 데이터나 명시적 상태 변경이 필요할 때 사용하는 메서드다.
         if (status == null) {
             throw new MenuException(MenuErrorCode.INVALID_MENU_STATUS);
         }

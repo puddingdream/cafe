@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class PasswordEncoderConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // 회원 비밀번호는 단방향 해시인 BCrypt로 저장한다.
         return new BCryptPasswordEncoder();
     }
 }

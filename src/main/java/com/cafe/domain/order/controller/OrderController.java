@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
+    // 주문 생성, 주문 조회, 주문 취소 API를 제공한다.
 
     private final OrderService orderService;
 

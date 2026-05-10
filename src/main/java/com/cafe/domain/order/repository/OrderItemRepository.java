@@ -12,8 +12,10 @@ import java.util.Collection;
 import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
+    // 주문 단건 조회에서 상세 항목을 저장 순서대로 가져온다.
     List<OrderItem> findAllByOrderIdOrderByIdAsc(Long orderId);
 
+    // 주문 목록 조회 시 여러 주문의 상세를 한 번에 가져와 N+1을 피한다.
     List<OrderItem> findAllByOrderIdInOrderByOrderIdAscIdAsc(Collection<Long> orderIds);
 
     @Query("""
@@ -30,6 +32,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             order by sum(orderItem.quantity) desc, menu.id asc
             limit 3
             """)
+    // V1 인기 메뉴 조회: RDB에서 최근 7일 PAID 주문의 메뉴별 수량을 집계한다.
     List<PopularMenuProjection> findPopularMenus(
             @Param("status") OrderStatus status,
             @Param("orderedFrom") LocalDateTime orderedFrom

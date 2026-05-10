@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "refresh_tokens")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
+    // refresh token을 서버 DB에 저장해 재발급과 로그아웃을 제어한다.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,6 +34,7 @@ public class RefreshToken {
     }
 
     public void updateToken(String token) {
+        // 로그인/재발급 때 기존 refresh token을 새 값으로 교체한다.
         this.token = token;
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
     @Override
     public boolean supportsParameter(@NonNull MethodParameter parameter) {
+        // @LoginUser LoginUserInfoDto 형태의 파라미터만 이 resolver가 처리한다.
         return parameter.hasParameterAnnotation(LoginUser.class)
                 && LoginUserInfoDto.class.isAssignableFrom(parameter.getParameterType());
     }
@@ -30,6 +31,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
             @NonNull NativeWebRequest webRequest,
             @Nullable WebDataBinderFactory binderFactory
     ) {
+        // JwtAuthenticationFilter가 SecurityContext에 넣어둔 principal을 컨트롤러 파라미터로 반환한다.
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || authentication.getPrincipal().equals("anonymousUser")

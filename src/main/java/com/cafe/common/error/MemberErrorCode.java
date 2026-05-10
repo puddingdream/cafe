@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum MemberErrorCode implements ErrorCodeType {
+    // 회원/인증 도메인에서 사용하는 에러 코드다.
     DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "M001", "이미 존재하는 이메일입니다."),
     DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "M002", "이미 존재하는 사용자 이름입니다."),
     DUPLICATE_PHONE(HttpStatus.BAD_REQUEST, "M003", "이미 존재하는 전화번호입니다."),

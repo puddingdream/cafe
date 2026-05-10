@@ -15,6 +15,7 @@ import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
+    // JWT 생성/검증과 claim 추출을 담당한다.
     private static final String ISSUER = "CafeAuthServer";
 
     @Value("${jwt.secret-key}")
@@ -30,6 +31,7 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
+        // HMAC SHA 계열 서명에 충분한 길이의 Base64 secret인지 애플리케이션 시작 시 검증한다.
         byte[] keyBytes = Decoders.BASE64.decode(secretKeyString);
         if (keyBytes.length < 32) {
             throw new IllegalArgumentException("JWT secret-key는 최소 32바이트(256bit) 이상이어야 합니다.");
@@ -59,6 +61,7 @@ public class JwtTokenProvider {
     }
 
     private String buildToken(Long memberId, String role, long validityTimeInMilliseconds) {
+        // subject에는 memberId를 넣고, access token일 때만 role claim을 추가한다.
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityTimeInMilliseconds);
 
@@ -78,6 +81,7 @@ public class JwtTokenProvider {
     }
 
     private Claims parseClaims(String token) {
+        // 서명, issuer, 만료 시간을 검증하고 payload를 반환한다.
         return Jwts.parser()
                 .verifyWith(key)
                 .requireIssuer(ISSUER)
