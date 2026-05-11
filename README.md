@@ -182,4 +182,27 @@ Spring Boot Application
 
 <img width="1700" height="981" alt="Image" src="https://github.com/user-attachments/assets/1c0fb934-c4f9-463c-b1a3-826011d19c4a" />
 
+
+RDS연결확인
+<img width="1005" height="395" alt="Image" src="https://github.com/user-attachments/assets/c2bedb8d-e031-4a1a-b8a5-d78cad1c20a1" />
+
+<img width="1053" height="1197" alt="Image" src="https://github.com/user-attachments/assets/22c03e71-c7c7-4c66-9f0d-7a924a061650" />
+
+S3연결확인
+
+<img width="1039" height="1037" alt="Image" src="https://github.com/user-attachments/assets/45d297d9-97de-4f7f-8f01-9d38716afbd2" />
+
+<img width="1029" height="1286" alt="Image" src="https://github.com/user-attachments/assets/9c069add-76d0-42e5-a7d3-7120a8a90f57" />
+주문완료
+
+<img width="1027" height="1256" alt="Image" src="https://github.com/user-attachments/assets/1a97a5b7-cacd-4db9-9e3c-c36766cde035" />
+
+<img width="1088" height="1255" alt="Image" src="https://github.com/user-attachments/assets/ed2f40a3-e228-42b7-882c-f31b3780d523" />
+
+캐싱이되어 응답속도가 빨라짐
+
+<img width="1070" height="1262" alt="Image" src="https://github.com/user-attachments/assets/535544fd-92f9-4521-8cd5-9af490d0d6ff" />
+
+zset으로 인기상품조회가능
+
 CICD + ALB 까지 하려고헀는데 시간부족으로 연결실패
