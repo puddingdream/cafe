@@ -1,0 +1,46 @@
+spring:
+  config:
+    # Production secrets/config values are loaded from AWS Systems Manager Parameter Store.
+    import: aws-parameterstore:/cafe/prod/
+  cloud:
+    aws:
+      # Parameter Store must read the same region where /cafe/prod/* parameters are stored.
+      region:
+        static: ap-northeast-2
+      parameterstore:
+        region: ap-northeast-2
+  datasource:
+    # Production must receive the real RDS connection values from Parameter Store.
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      # Production schema changes should be controlled by migration/deployment steps, not Hibernate auto-update.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+
+management:
+  endpoint:
+    health:
+      # Do not expose detailed infrastructure status in production health responses.
+      show-details: never
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    # Exposed through the actuator info endpoint when management.info.env.enabled=true.
+    message: ${APP_MESSAGE:Cafe order service}
+
+logging:
+  level:
+    root: INFO
+
+app:
+  dummy-data:
+    # Production should not create local manual-test seed data.
+    enabled: false

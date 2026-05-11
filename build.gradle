@@ -42,7 +42,11 @@ dependencies {
 
     // Object storage
     implementation platform('software.amazon.awssdk:bom:2.25.70')
+    implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:4.0.0')
     implementation 'software.amazon.awssdk:s3'
+
+    // AWS Parameter Store
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 
     // Security / JWT
     implementation 'org.springframework.boot:spring-boot-starter-security'
