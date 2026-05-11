@@ -41,6 +41,15 @@ spring:
       file-size-threshold: 0B
       max-file-size: 10MB
       max-request-size: 12MB
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+          temperature: ${OPENAI_CHAT_TEMPERATURE:0.4}
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}

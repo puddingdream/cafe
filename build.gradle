@@ -16,6 +16,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencies {
@@ -47,6 +48,10 @@ dependencies {
 
     // AWS Parameter Store
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
+
+    // Spring AI / OpenAI
+    implementation platform('org.springframework.ai:spring-ai-bom:2.0.0-M6')
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
     // Security / JWT
     implementation 'org.springframework.boot:spring-boot-starter-security'

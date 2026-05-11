@@ -54,13 +54,18 @@ class OrderStatisticsReaderIntegrationTest {
         ));
 
         List<PopularMenuProjection> popularMenus = orderStatisticsReader.findPopularMenus(orderedFrom);
+        List<PopularMenuProjection> testPopularMenus = popularMenus.stream()
+                .filter(projection -> projection.menu().getId().equals(latte.getId())
+                        || projection.menu().getId().equals(americano.getId())
+                        || projection.menu().getId().equals(tea.getId()))
+                .toList();
 
-        assertThat(popularMenus).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(popularMenus.get(0).menu().getId()).isEqualTo(latte.getId());
-        assertThat(popularMenus.get(0).orderCount()).isEqualTo(6L);
-        assertThat(popularMenus.get(1).menu().getId()).isEqualTo(americano.getId());
-        assertThat(popularMenus.get(1).orderCount()).isEqualTo(3L);
-        assertThat(popularMenus)
+        assertThat(testPopularMenus).hasSize(2);
+        assertThat(testPopularMenus.get(0).menu().getId()).isEqualTo(latte.getId());
+        assertThat(testPopularMenus.get(0).orderCount()).isEqualTo(6L);
+        assertThat(testPopularMenus.get(1).menu().getId()).isEqualTo(americano.getId());
+        assertThat(testPopularMenus.get(1).orderCount()).isEqualTo(3L);
+        assertThat(testPopularMenus)
                 .extracting(projection -> projection.menu().getId())
                 .doesNotContain(tea.getId());
     }
