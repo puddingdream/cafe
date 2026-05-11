@@ -26,6 +26,14 @@ JWT_ACCESS_TOKEN_VALIDITY_TIME=3600000
 JWT_REFRESH_TOKEN_VALIDITY_TIME=1209600000
 ```
 
+선택 AI 추천 설정:
+
+```text
+SPRING_AI_MODEL_CHAT=openai
+OPENAI_API_KEY=
+OPENAI_CHAT_MODEL=gpt-4o-mini
+```
+
 ### 2. 로컬 인프라 실행
 
 ```bash
@@ -62,6 +70,8 @@ docker compose up -d
 | 최근 7일 인기 메뉴 Top 3 조회 | 구현 | V1 RDB 집계, V2 Kafka + Redis ZSET | [설계 의도](docs/design-rationale.md#인기-메뉴-설계) |
 | 동시성 / 데이터 일관성 테스트 | 구현 | 통합 테스트, 동시성 테스트, 성능 테스트 | [테스트/검증](docs/testing-verification.md) |
 
+부가 기능으로 Spring AI 기반 메뉴 추천 API를 추가했습니다. 과제 필수 기능은 아니므로 실제 판매중 메뉴 후보를 OpenAI에 전달하고, 서버가 `menuId`를 검증하는 방식만 간단히 적용했습니다.
+
 ## 문서
 
 README는 제출용 요약만 담고, 상세 내용은 문서로 분리했습니다.
@@ -91,6 +101,7 @@ README는 제출용 요약만 담고, 상세 내용은 문서로 분리했습니
 - Spring Data JPA
 - Spring Data Redis
 - Spring for Apache Kafka
+- Spring AI OpenAI
 - Validation
 - Lombok
 - Gradle
@@ -134,6 +145,9 @@ Spring Boot Application
   |-- Kafka
         - order paid event
         - order canceled event
+
+  |-- OpenAI
+        - optional menu recommendation
 ```
 
 기본 원칙은 `MySQL을 원본 저장소`로 두고, Redis와 Kafka는 조회 최적화와 이벤트 기반 read model 갱신에 사용하는 것입니다.
@@ -170,6 +184,7 @@ Spring Boot Application
 - 인기 메뉴는 V1 RDB 집계와 V2 Redis ZSET read model을 함께 제공합니다.
 - 메뉴 조회는 카테고리별 Redis Cache를 적용합니다.
 - JPA 연관관계는 최소화하고 ID 참조 방식으로 도메인 경계를 느슨하게 유지합니다.
+- AI 추천은 실제 판매중 메뉴 후보만 프롬프트에 전달하고, 최종 응답은 서버가 `menuId` 기준으로 검증합니다.
 
 자세한 설계 이유는 [Design Rationale](docs/design-rationale.md)와 [Problem Solving Strategy](docs/problem-solving-strategy.md)를 참고합니다.
 

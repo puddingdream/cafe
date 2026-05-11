@@ -179,6 +179,33 @@ Response data:
 
 현재 과제에서는 포인트 충전 API를 직접 제공한다. 실제 결제 서비스에서는 사용자가 임의로 포인트를 충전하는 API를 직접 호출하지 않고, PortOne 같은 PG 결제 검증 이후 서버 내부에서 포인트 충전을 호출하는 구조가 더 적합하다.
 
+## AI
+
+AI 추천은 과제 필수 요구사항이 아닌 부가 기능이다. 실제 판매중 메뉴 후보만 OpenAI에 전달하고, AI가 반환한 `menuId`를 서버에서 다시 검증한다.
+
+| Method | Endpoint | 인증 | 설명 |
+| --- | --- | --- | --- |
+| `POST` | `/api/ai/coffee-recommendations` | Required | 취향 기반 메뉴 추천 |
+
+Request:
+
+| Field | Type | Required | 설명 |
+| --- | --- | --- | --- |
+| `preference` | `string` | O | 원하는 맛, 상황, 기분 |
+| `temperaturePreference` | `string` | X | 예: `ICE`, `HOT`, `상관없음` |
+| `caffeinePreference` | `string` | X | 예: `디카페인 선호`, `상관없음` |
+| `maxPrice` | `number` | X | 최대 예산 |
+
+Response data:
+
+| Field | Type | 설명 |
+| --- | --- | --- |
+| `answerType` | `string` | `RECOMMENDATION`, `OUT_OF_SCOPE` |
+| `message` | `string` | 추천 요약 또는 범위 밖 요청 안내 |
+| `recommendations` | `array` | 서버 검증을 통과한 추천 메뉴 |
+| `menuCount` | `number` | AI 후보로 전달한 메뉴 수 |
+| `recommendedAt` | `datetime` | 추천 생성 시각 |
+
 ## Order
 
 | Method | Endpoint | 인증 | 설명 |
