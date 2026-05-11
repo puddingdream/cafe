@@ -173,7 +173,7 @@ Spring Boot Application
 
 자세한 설계 이유는 [Design Rationale](docs/design-rationale.md)와 [Problem Solving Strategy](docs/problem-solving-strategy.md)를 참고합니다.
 
-## AWS EC2 RDS S3 MSK ElastiCache 연결 사진
+## AWS EC2, RDS, S3, MSK, ElastiCache 연결 사진
 <img width="1538" height="218" alt="Image" src="https://github.com/user-attachments/assets/0fd255ec-8172-43e4-ac89-5abd09cee863" />
 
 <img width="1666" height="221" alt="Image" src="https://github.com/user-attachments/assets/538d9372-aadd-4687-91f0-220aa5e5e04e" />
